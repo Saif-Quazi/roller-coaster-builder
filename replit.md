@@ -59,6 +59,18 @@ Custom build script (`script/build.ts`) that:
 - Selectively bundles common dependencies to reduce cold start times
 - Outputs CommonJS for Node.js compatibility
 
+## Key Implementation Notes
+
+### Loop Orientation Fix (Critical)
+When rendering loops with corkscrew/helical geometry, the track orientation must use a **complete reference frame** from the ideal circular loop - including the TANGENT, not just the up/normal vectors. The helical spline tangent contains lateral torsion that causes visible twisting at quarter-points (θ=π/2 and θ=3π/2).
+
+Solution implemented in Track.tsx:
+- Loop points store metadata: entryPos, forward, up, right, radius, theta
+- For loop segments, compute reference tangent: `cos(θ)*forward + sin(θ)*up`
+- Compute up as inward radial: `-sin(θ)*forward + cos(θ)*up`
+- Normal is constant: `right` vector
+- All three vectors (tangent, up, normal) must come from reference frame, not the spline
+
 ## External Dependencies
 
 ### 3D Graphics
