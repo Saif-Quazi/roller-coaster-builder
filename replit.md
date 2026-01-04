@@ -61,6 +61,15 @@ Custom build script (`script/build.ts`) that:
 
 ## Key Implementation Notes
 
+### Scale Configuration
+All geometric constants are centralized in `client/src/lib/config/scale.ts` with a master `SCALE` factor (default 0.5). This includes:
+- Loop geometry: LOOP_RADIUS, HELIX_SEPARATION, EXIT_SEPARATION, FORWARD_SEPARATION
+- Track elements: RAIL_OFFSET, TIE dimensions, support dimensions
+- Car and camera: CAR dimensions, WHEEL dimensions, CAMERA_HEIGHT
+- Sampling: SAMPLES_PER_POINT (reduced for performance)
+
+To resize the world, adjust the SCALE constant - all dependent values will update automatically.
+
 ### Loop Orientation Fix (Critical)
 When rendering loops with corkscrew/helical geometry, the track orientation must use a **complete reference frame** from the ideal circular loop - including the TANGENT, not just the up/normal vectors. The helical spline tangent contains lateral torsion that causes visible twisting at quarter-points (θ=π/2 and θ=3π/2).
 

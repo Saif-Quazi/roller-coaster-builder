@@ -30,3 +30,25 @@ export const TRACK_LIGHT_OFFSET = 0.5 * SCALE;
 export const MIN_SUPPORT_HEIGHT = 1 * SCALE;
 export const CROSSBRACE_MIN_HEIGHT = 2 * SCALE;
 export const DIAGONAL_MIN_HEIGHT = 3 * SCALE;
+
+export const CAR_WIDTH = 1 * SCALE;
+export const CAR_HEIGHT = 0.5 * SCALE;
+export const CAR_LENGTH = 2 * SCALE;
+export const CAR_OFFSET_Y = 0.3 * SCALE;
+export const CABIN_WIDTH = 0.8 * SCALE;
+export const CABIN_HEIGHT = 0.3 * SCALE;
+export const CABIN_LENGTH = 0.6 * SCALE;
+export const CABIN_OFFSET_Y = 0.4 * SCALE;
+export const WHEEL_RADIUS = 0.15 * SCALE;
+export const WHEEL_WIDTH = 0.1 * SCALE;
+export const WHEEL_OFFSET_Y = 0.35 * SCALE;
+export const WHEEL_OFFSET_Z = 0.6 * SCALE;
+export const WHEEL_OFFSET_X = 0.5 * SCALE;
+
+export const CAMERA_HEIGHT = 1.5 * SCALE;
+export const CAMERA_LOOK_AHEAD = 0.5 * SCALE;
+export const CAMERA_LERP = 0.1;
+
+export const CHAIN_SPEED = 0.9 * SCALE;
+export const MIN_RIDE_SPEED = 1.0 * SCALE;
+export const GRAVITY_SCALE = SCALE;

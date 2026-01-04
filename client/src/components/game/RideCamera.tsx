@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useRollerCoaster } from "@/lib/stores/useRollerCoaster";
 import { getTrackCurve, getTrackTiltAtProgress } from "./Track";
+import { CAMERA_HEIGHT, CAMERA_LERP, CHAIN_SPEED, MIN_RIDE_SPEED, GRAVITY_SCALE } from "@/lib/config/scale";
 
 export function RideCamera() {
   const { camera } = useThree();
@@ -70,19 +71,17 @@ export function RideCamera() {
     let speed: number;
     
     if (hasChainLift && rideProgress < firstPeakT) {
-      const chainSpeed = 0.9 * rideSpeed;
-      speed = chainSpeed;
+      speed = CHAIN_SPEED * rideSpeed;
       maxHeightReached.current = Math.max(maxHeightReached.current, currentHeight);
     } else {
       maxHeightReached.current = Math.max(maxHeightReached.current, currentHeight);
       
-      const gravity = 9.8;
+      const gravity = 9.8 * GRAVITY_SCALE;
       const heightDrop = maxHeightReached.current - currentHeight;
       
       const energySpeed = Math.sqrt(2 * gravity * Math.max(0, heightDrop));
       
-      const minSpeed = 1.0;
-      speed = Math.max(minSpeed, energySpeed) * rideSpeed;
+      speed = Math.max(MIN_RIDE_SPEED, energySpeed) * rideSpeed;
     }
     
     const progressDelta = (speed * delta) / curveLength;
@@ -124,18 +123,17 @@ export function RideCamera() {
     }
     previousUp.current.copy(upVector);
     
-    const cameraHeight = 1.5;
-    const cameraOffset = upVector.clone().multiplyScalar(cameraHeight);
+    const cameraOffset = upVector.clone().multiplyScalar(CAMERA_HEIGHT);
     
     const targetCameraPos = position.clone().add(cameraOffset);
     const targetLookAt = lookAtPoint.clone().add(cameraOffset.clone().multiplyScalar(0.5));
     
-    previousCameraPos.current.lerp(targetCameraPos, 0.1);
-    previousLookAt.current.lerp(targetLookAt, 0.1);
+    previousCameraPos.current.lerp(targetCameraPos, CAMERA_LERP);
+    previousLookAt.current.lerp(targetLookAt, CAMERA_LERP);
     
     const tilt = getTrackTiltAtProgress(trackPoints, newProgress, isLooped);
     const targetRoll = (tilt * Math.PI) / 180;
-    previousRoll.current = previousRoll.current + (targetRoll - previousRoll.current) * 0.1;
+    previousRoll.current = previousRoll.current + (targetRoll - previousRoll.current) * CAMERA_LERP;
     
     camera.position.copy(previousCameraPos.current);
     camera.lookAt(previousLookAt.current);
