@@ -51,6 +51,8 @@ export const CAMERA_LERP = 0.1;
 export const CHAIN_SPEED = 0.9;
 export const MIN_RIDE_SPEED = 1.0;
 export const GRAVITY_SCALE = 1 / SCALE;
+export const LOOP_MIN_SPEED = 4.0;
+export const LOOP_SPEED_BOOST = 1.5;
 
 export const TRACK_POINT_RADIUS = 0.5 * SCALE;
 export const TRANSFORM_CONTROL_SIZE = 0.75 * SCALE;

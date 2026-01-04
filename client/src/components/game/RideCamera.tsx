@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useRollerCoaster } from "@/lib/stores/useRollerCoaster";
 import { getTrackCurve, getTrackTiltAtProgress } from "./Track";
-import { CAMERA_HEIGHT, CAMERA_LERP, CHAIN_SPEED, MIN_RIDE_SPEED, GRAVITY_SCALE } from "@/lib/config/scale";
+import { CAMERA_HEIGHT, CAMERA_LERP, CHAIN_SPEED, MIN_RIDE_SPEED, GRAVITY_SCALE, LOOP_MIN_SPEED, LOOP_SPEED_BOOST } from "@/lib/config/scale";
 
 export function RideCamera() {
   const { camera } = useThree();
@@ -69,6 +69,12 @@ export function RideCamera() {
     const currentPoint = curve.getPoint(rideProgress);
     const currentHeight = currentPoint.y;
     
+    // Check if current position is inside a loop for physics adjustment
+    const totalPoints = trackPoints.length;
+    const approxPointIndex = Math.floor(rideProgress * (totalPoints - 1));
+    const currentTrackPoint = trackPoints[Math.min(approxPointIndex, totalPoints - 1)];
+    const isCurrentlyInLoop = currentTrackPoint?.loopMeta !== undefined;
+    
     let speed: number;
     
     if (hasChainLift && rideProgress < firstPeakT) {
@@ -80,7 +86,12 @@ export function RideCamera() {
       const gravity = 9.8 * GRAVITY_SCALE;
       const heightDrop = maxHeightReached.current - currentHeight;
       
-      const energySpeed = Math.sqrt(2 * gravity * Math.max(0, heightDrop));
+      let energySpeed = Math.sqrt(2 * gravity * Math.max(0, heightDrop));
+      
+      // Apply loop speed boost and minimum speed to maintain momentum through loops
+      if (isCurrentlyInLoop) {
+        energySpeed = Math.max(LOOP_MIN_SPEED, energySpeed * LOOP_SPEED_BOOST);
+      }
       
       speed = Math.max(MIN_RIDE_SPEED, energySpeed) * rideSpeed;
     }
@@ -118,11 +129,10 @@ export function RideCamera() {
       upVector.sub(tangent.clone().multiplyScalar(d2)).normalize();
     }
     
-    // Check if this track point is inside a loop (has loopMeta)
-    const totalPoints = trackPoints.length;
-    const approxPointIndex = Math.floor(newProgress * (totalPoints - 1));
-    const currentTrackPoint = trackPoints[Math.min(approxPointIndex, totalPoints - 1)];
-    const isInLoop = currentTrackPoint?.loopMeta !== undefined;
+    // Re-check loop status at new progress position for camera orientation
+    const newApproxPointIndex = Math.floor(newProgress * (totalPoints - 1));
+    const newCurrentTrackPoint = trackPoints[Math.min(newApproxPointIndex, totalPoints - 1)];
+    const isInLoop = newCurrentTrackPoint?.loopMeta !== undefined;
     
     // Prevent up vector inversion on non-loop sections
     // On flat/normal track, the up vector should always have positive Y component
