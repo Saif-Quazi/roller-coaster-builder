@@ -149,6 +149,47 @@ export const useRollerCoaster = create<RollerCoasterState>((set, get) => ({
       const up = new THREE.Vector3(0, 1, 0);
       const right = new THREE.Vector3().crossVectors(forward, up).normalize();
       
+      // === APPROACH POINTS: Smooth entry into the loop ===
+      // Add 2 approach points that curve gently from the previous track into the loop entry
+      const approachPoints: TrackPoint[] = [];
+      const prevPoint = pointIndex > 0 ? state.trackPoints[pointIndex - 1] : null;
+      
+      if (prevPoint) {
+        const prevPos = prevPoint.position.clone();
+        const approachDist = loopRadius * 0.5; // Distance for approach curve
+        
+        // Tangent at entry: must be the loop's forward direction
+        const entryTangent = forward.clone();
+        // Tangent from previous: direction we're coming from
+        const incomingDir = entryPos.clone().sub(prevPos).normalize();
+        
+        // Hermite interpolation for approach
+        const approachHermite = (t: number): THREE.Vector3 => {
+          const t2 = t * t;
+          const t3 = t2 * t;
+          
+          const h00 = 2*t3 - 3*t2 + 1;
+          const h10 = t3 - 2*t2 + t;
+          const h01 = -2*t3 + 3*t2;
+          const h11 = t3 - t2;
+          
+          const tangentScale = approachDist * 0.8;
+          
+          return new THREE.Vector3()
+            .addScaledVector(prevPos, h00)
+            .addScaledVector(incomingDir, h10 * tangentScale)
+            .addScaledVector(entryPos, h01)
+            .addScaledVector(entryTangent, h11 * tangentScale);
+        };
+        
+        // Add approach point (replaces direct connection to entry)
+        approachPoints.push({
+          id: `point-${++pointCounter}`,
+          position: approachHermite(0.5),
+          tilt: 0
+        });
+      }
+      
       // Build helical loop with mild corkscrew
       // Lateral offset increases linearly throughout to separate entry from exit
       for (let i = 1; i <= totalLoopPoints; i++) {
@@ -263,14 +304,16 @@ export const useRollerCoaster = create<RollerCoasterState>((set, get) => ({
         });
       }
       
-      // Combine: original up to entry + loop + transitions + skip next point (to avoid S-curve) + rest
+      // Combine: original up to BEFORE entry + approach + entry + loop + transitions + skip legacy points + rest
       // If nextNextPoint exists, skip pointIndex+1 (nextPoint) to avoid clustering
       const skipCount = nextNextPoint ? 2 : 1;
       const newTrackPoints = [
-        ...state.trackPoints.slice(0, pointIndex + 1),
-        ...loopPoints,
-        ...transitionPoints,
-        ...state.trackPoints.slice(pointIndex + skipCount)
+        ...state.trackPoints.slice(0, pointIndex), // All points before entry
+        ...approachPoints,                          // Smooth approach to entry
+        entryPoint,                                 // The entry point itself
+        ...loopPoints,                              // The loop
+        ...transitionPoints,                        // Smooth exit transition
+        ...state.trackPoints.slice(pointIndex + 1 + skipCount) // Skip entry and next legacy points
       ];
       
       return { trackPoints: newTrackPoints };
