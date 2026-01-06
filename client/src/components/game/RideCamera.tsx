@@ -12,7 +12,6 @@ export function RideCamera() {
   const previousCameraPos = useRef(new THREE.Vector3());
   const previousLookAt = useRef(new THREE.Vector3());
   const previousRoll = useRef(0);
-  const previousUp = useRef(new THREE.Vector3(0, 1, 0));
   const maxHeightReached = useRef(0);
   
   const firstPeakT = useMemo(() => {
@@ -54,8 +53,6 @@ export function RideCamera() {
     if (isRiding && curveRef.current) {
       const startPoint = curveRef.current.getPoint(0);
       maxHeightReached.current = startPoint.y;
-      // Reset up vector for new ride
-      previousUp.current.set(0, 1, 0);
     }
   }, [isRiding]);
   
@@ -103,39 +100,48 @@ export function RideCamera() {
     
     setRideProgress(newProgress);
     
-    const position = curve.getPoint(newProgress);
+    // Look much further ahead for stable forward-facing camera
     const lookAheadT = isLooped 
-      ? (newProgress + 0.02) % 1 
-      : Math.min(newProgress + 0.02, 0.999);
+      ? (newProgress + 0.08) % 1 
+      : Math.min(newProgress + 0.08, 0.999);
     const lookAtPoint = curve.getPoint(lookAheadT);
     
-    const tangent = curve.getTangent(newProgress).normalize();
+    // Position camera slightly behind the current track progress to avoid cart obstruction
+    const cameraBehindT = isLooped
+      ? (newProgress - 0.01 + 1) % 1
+      : Math.max(newProgress - 0.01, 0.001);
+    const cameraTrackPos = curve.getPoint(cameraBehindT);
     
-    // Parallel transport: maintain a stable up vector through vertical sections
-    const dot = previousUp.current.dot(tangent);
-    const upVector = previousUp.current.clone().sub(tangent.clone().multiplyScalar(dot));
-    if (upVector.length() > 0.01) {
-      upVector.normalize();
-    } else {
-      // Fallback if degenerate
-      upVector.set(0, 1, 0);
-      const d2 = upVector.dot(tangent);
-      upVector.sub(tangent.clone().multiplyScalar(d2)).normalize();
+    const tangent = curve.getTangent(cameraBehindT).normalize();
+    
+    // Use world up vector and project it perpendicular to tangent for stable orientation
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const right = new THREE.Vector3().crossVectors(tangent, worldUp).normalize();
+    
+    // If tangent is nearly vertical, use a fallback right vector
+    if (right.length() < 0.01) {
+      right.set(1, 0, 0);
     }
-    previousUp.current.copy(upVector);
     
-    const cameraHeight = 1.5;
+    // Calculate perpendicular up vector from tangent and right
+    const upVector = new THREE.Vector3().crossVectors(right, tangent).normalize();
+    
+    const cameraHeight = 2.0;
     const cameraOffset = upVector.clone().multiplyScalar(cameraHeight);
     
-    const targetCameraPos = position.clone().add(cameraOffset);
-    const targetLookAt = lookAtPoint.clone().add(cameraOffset.clone().multiplyScalar(0.5));
+    const targetCameraPos = cameraTrackPos.clone().add(cameraOffset);
     
-    previousCameraPos.current.lerp(targetCameraPos, 0.1);
-    previousLookAt.current.lerp(targetLookAt, 0.1);
+    // Look at point further ahead along the track, at a lower height offset
+    const lookAtOffset = upVector.clone().multiplyScalar(cameraHeight * 0.3);
+    const targetLookAt = lookAtPoint.clone().add(lookAtOffset);
+    
+    // Faster lerp for more responsive camera
+    previousCameraPos.current.lerp(targetCameraPos, 0.15);
+    previousLookAt.current.lerp(targetLookAt, 0.15);
     
     const tilt = getTrackTiltAtProgress(trackPoints, newProgress, isLooped);
     const targetRoll = (tilt * Math.PI) / 180;
-    previousRoll.current = previousRoll.current + (targetRoll - previousRoll.current) * 0.1;
+    previousRoll.current = previousRoll.current + (targetRoll - previousRoll.current) * 0.15;
     
     camera.position.copy(previousCameraPos.current);
     camera.lookAt(previousLookAt.current);
