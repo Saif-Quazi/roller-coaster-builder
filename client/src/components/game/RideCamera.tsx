@@ -369,7 +369,6 @@ function sampleHybridTrack(
     const point = spline.getPoint(splineT);
     const tangent = spline.getTangent(splineT).normalize();
     
-    let rollOffset = new THREE.Vector3(0, 0, 0);
     const loopMap = new Map<string, LoopSegment>();
     for (const seg of loopSegments) {
       loopMap.set(seg.entryPointId, seg);
@@ -378,6 +377,20 @@ function sampleHybridTrack(
     const numPoints = trackPoints.length;
     const totalSplineSegments = isLooped ? numPoints : numPoints - 1;
     
+    // First compute total loop offset (for closed track compensation)
+    let totalLoopOffset = new THREE.Vector3(0, 0, 0);
+    for (let i = 0; i < numPoints; i++) {
+      const tp = trackPoints[i];
+      const loopSeg = loopMap.get(tp.id);
+      if (loopSeg) {
+        const spT = i / totalSplineSegments;
+        const fwd = spline.getTangent(spT).normalize();
+        totalLoopOffset.addScaledVector(fwd, loopSeg.pitch);
+      }
+    }
+    
+    // Compute rollOffset up to current section
+    let rollOffset = new THREE.Vector3(0, 0, 0);
     for (let i = 0; i < numPoints && i <= (section.pointIndex ?? 0); i++) {
       const tp = trackPoints[i];
       const loopSeg = loopMap.get(tp.id);
@@ -388,7 +401,14 @@ function sampleHybridTrack(
       }
     }
     
+    // Apply rollOffset
     point.add(rollOffset);
+    
+    // Apply progressive compensation for closed tracks (matches Track.tsx)
+    if (isLooped) {
+      const compensation = totalLoopOffset.clone().multiplyScalar(-splineT);
+      point.add(compensation);
+    }
     
     // Use world-up anchored frame to keep track level at hill peaks
     const worldUp = new THREE.Vector3(0, 1, 0);
