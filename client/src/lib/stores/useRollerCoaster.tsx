@@ -120,11 +120,13 @@ interface RollerCoasterState {
   hasChainLift: boolean;
   showWoodSupports: boolean;
   isNightMode: boolean;
+  isAutoRotate: boolean;
   cameraTarget: THREE.Vector3 | null;
   savedCoasters: SavedCoaster[];
   currentCoasterName: string | null;
   
   setMode: (mode: CoasterMode) => void;
+  setIsAutoRotate: (autoRotate: boolean) => void;
   setCameraTarget: (target: THREE.Vector3 | null) => void;
   addTrackPoint: (position: THREE.Vector3) => void;
   updateTrackPoint: (id: string, position: THREE.Vector3) => void;
@@ -169,8 +171,7 @@ export const useRollerCoaster = create<RollerCoasterState>((set, get) => ({
   isLooped: false,
   hasChainLift: true,
   showWoodSupports: false,
-  isNightMode: false,
-  cameraTarget: null,
+  isNightMode: false,  isAutoRotate: false,  cameraTarget: null,
   savedCoasters: loadSavedCoasters(),
   currentCoasterName: null,
   
@@ -189,6 +190,8 @@ export const useRollerCoaster = create<RollerCoasterState>((set, get) => ({
   setShowWoodSupports: (show) => set({ showWoodSupports: show }),
   
   setIsNightMode: (night) => set({ isNightMode: night }),
+  
+  setIsAutoRotate: (autoRotate) => set({ isAutoRotate: autoRotate }),
   
   addTrackPoint: (position) => {
     const id = `point-${++pointCounter}`;

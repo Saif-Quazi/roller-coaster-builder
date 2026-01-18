@@ -24,6 +24,8 @@ export function GameUI() {
     setShowWoodSupports,
     isNightMode,
     setIsNightMode,
+    isAutoRotate,
+    setIsAutoRotate,
     createLoopAtPoint,
     setCameraTarget,
     savedCoasters,
@@ -178,6 +180,16 @@ export function GameUI() {
                   : "bg-gray-600 hover:bg-gray-700"}`}
               >
                 {isNightMode ? "Night ON" : "Night OFF"}
+              </Button>
+              
+              <Button
+                size="sm"
+                onClick={() => setIsAutoRotate(!isAutoRotate)}
+                className={`h-6 text-[10px] px-2 ${isAutoRotate 
+                  ? "bg-blue-600 hover:bg-blue-700" 
+                  : "bg-gray-600 hover:bg-gray-700"}`}
+              >
+                {isAutoRotate ? "Rotate ON" : "Rotate OFF"}
               </Button>
               
               <Button
